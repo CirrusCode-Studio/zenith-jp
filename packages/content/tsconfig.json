@@ -1,0 +1,3 @@
+{
+  "extends": "@zenith-jp/config/tsconfig.base.json"
+}
