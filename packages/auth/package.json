@@ -1,0 +1,24 @@
+{
+  "name": "@zenith-jp/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@zenith-jp/db": "workspace:*",
+    "@zenith-jp/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@zenith-jp/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
