@@ -55,6 +55,10 @@ export default function LearningRunner({
   const [recursiveLoop, setRecursiveLoop] = useState(true);
   const [shadowTimeSec, setShadowTimeSec] = useState(2);
   const [shadowingEnabled, setShadowingEnabled] = useState(true);
+  const [passiveRecallEnabled, setPassiveRecallEnabled] = useState(true);
+  const [recallPauseSec, setRecallPauseSec] = useState(2);
+  const [flowRevealed, setFlowRevealed] = useState(false);
+  const [recallCountdown, setRecallCountdown] = useState(2);
 
   // Core Game State
   const [steps, setSteps] = useState<StreamStep[]>([]);
@@ -181,22 +185,13 @@ export default function LearningRunner({
   // Autoplay Voice and Progressive Reveal Loop on transition
   const activeStep = steps[currentIndex];
 
-  useEffect(() => {
-    if (!isStarted || !activeStep) return;
-
-    // Reset step specifics
-    setAnswerRevealed(false);
-    setSelectedChoice(null);
-    setIsSuccessFeedback(null);
-    setAudioProgress(0);
-    setActivePhase('listen');
-    setShadowCountdown(shadowTimeSec);
+  const startSpeechAndAutoAdvance = () => {
     setIsAudioPlaying(true);
-    wordStartRef.current = Date.now();
+    setAudioProgress(0);
+    setShadowCountdown(shadowTimeSec);
+    setActivePhase('listen');
 
-    // Clean active intervals/timers
     if (timerRef.current) clearInterval(timerRef.current);
-    if (shadowTimerRef.current) clearInterval(shadowTimerRef.current);
 
     // Speak native tongue
     speakJapanese(activeStep.word.kana, voiceSpeed, () => {
@@ -218,12 +213,57 @@ export default function LearningRunner({
         onSpeakCompleted();
       }
     }, 20);
+  };
+
+  const skipRecallAndReveal = () => {
+    if (studyMode === 'flow' && passiveRecallEnabled && !flowRevealed) {
+      if (shadowTimerRef.current) clearInterval(shadowTimerRef.current);
+      setFlowRevealed(true);
+      startSpeechAndAutoAdvance();
+    }
+  };
+
+  useEffect(() => {
+    if (!isStarted || !activeStep) return;
+
+    // Reset step specifics
+    setAnswerRevealed(false);
+    setSelectedChoice(null);
+    setIsSuccessFeedback(null);
+    setAudioProgress(0);
+    setActivePhase('listen');
+    setShadowCountdown(shadowTimeSec);
+    setIsAudioPlaying(false);
+    wordStartRef.current = Date.now();
+
+    // Clean active intervals/timers
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (shadowTimerRef.current) clearInterval(shadowTimerRef.current);
+
+    if (studyMode === 'flow' && passiveRecallEnabled) {
+      setFlowRevealed(false);
+      setRecallCountdown(recallPauseSec);
+
+      let count = recallPauseSec * 10;
+      shadowTimerRef.current = setInterval(() => {
+        count--;
+        setRecallCountdown(Number((count / 10).toFixed(1)));
+        if (count <= 0) {
+          clearInterval(shadowTimerRef.current);
+          setFlowRevealed(true);
+          startSpeechAndAutoAdvance();
+        }
+      }, 100);
+    } else {
+      setFlowRevealed(true);
+      startSpeechAndAutoAdvance();
+    }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (shadowTimerRef.current) clearInterval(shadowTimerRef.current);
     };
-  }, [currentIndex, isStarted, steps]);
+  }, [currentIndex, isStarted, steps, studyMode, passiveRecallEnabled, recallPauseSec]);
 
   const onSpeakCompleted = () => {
     setIsAudioPlaying(false);
@@ -395,7 +435,8 @@ export default function LearningRunner({
 
   // Design Waveform Bars
   const waveformHeights = [14, 28, 42, 24, 32, 48, 36, 44, 20, 32, 40, 18];
-   // Mobile Swipe Gestures
+
+  // Mobile Swipe Gestures
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -427,6 +468,7 @@ export default function LearningRunner({
     touchStartX.current = null;
     touchStartY.current = null;
   };
+
   // --- RENDER SCREEN VIEWS ---
   if (!isStarted) {
     return (
@@ -504,6 +546,7 @@ export default function LearningRunner({
 
           {studyMode === 'flow' && (
             <div className="border-t border-[#E5E1DA]/55 dark:border-stone-850/50 pt-3 space-y-3">
+              {/* Shadowing Control */}
               <label id="toggle-shadowing-wrapper" className="flex items-center justify-between text-xs cursor-pointer select-none">
                 <span className="font-medium text-stone-700 dark:text-stone-300">Kích hoạt Shadowing (nhại nói)</span>
                 <div id="toggle-shadowing" className="relative shrink-0">
@@ -523,6 +566,35 @@ export default function LearningRunner({
                   <div className="flex items-center gap-2 font-mono font-bold text-stone-950 dark:text-stone-100">
                     <input type="range" min={1} max={5} value={shadowTimeSec} onChange={e => setShadowTimeSec(Number(e.target.value))} className="w-24 accent-[#4F46E5]" />
                     <span>{shadowTimeSec} Giây</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Passive Recall Layer Control */}
+              <div className="border-t border-stone-200/50 dark:border-stone-850/40 my-1 pt-2"></div>
+
+              <label id="toggle-passive-recall-wrapper" className="flex items-center justify-between text-xs cursor-pointer select-none">
+                <div className="space-y-0.5">
+                  <span className="font-medium text-stone-700 dark:text-stone-300 block">Lớp Gợi nhớ Thụ động (Passive Recall)</span>
+                  <span className="text-[10px] text-stone-500 block">Hiện nghĩa trước, ẩn chữ Nhật để nhẩm nghĩ trước</span>
+                </div>
+                <div id="toggle-passive-recall" className="relative shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={passiveRecallEnabled}
+                    onChange={e => setPassiveRecallEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-stone-200 dark:bg-stone-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#4F46E5] transition-colors"></div>
+                </div>
+              </label>
+
+              {passiveRecallEnabled && (
+                <div className="flex items-center justify-between text-xs animate-fadeIn pl-4 border-l-2 border-[#E5E1DA] dark:border-stone-800">
+                  <span className="text-stone-600 dark:text-stone-400">Khoảng dừng nhẩm nghĩ:</span>
+                  <div className="flex items-center gap-2 font-mono font-bold text-stone-950 dark:text-stone-100">
+                    <input type="range" min={1} max={5} value={recallPauseSec} onChange={e => setRecallPauseSec(Number(e.target.value))} className="w-24 accent-[#4F46E5]" />
+                    <span>{recallPauseSec} Giây</span>
                   </div>
                 </div>
               )}
@@ -587,7 +659,8 @@ export default function LearningRunner({
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       className="w-full max-w-lg mx-auto bg-stone-50 dark:bg-stone-900 border border-[#E5E1DA] rounded-3xl p-5 md:p-7 shadow-2xl transition-all select-none"
-    > 
+    >
+      
       {/* Dynamic Header Metrics row */}
       <div className="flex items-center justify-between border-b border-[#E5E1DA] dark:border-stone-800 pb-3 mb-4 text-xs font-mono">
         <div className="flex items-center gap-2">
@@ -632,6 +705,8 @@ export default function LearningRunner({
             />
           ))}
         </div>
+
+
       </div>
 
       {activeStep.isWeaved && (
@@ -648,39 +723,109 @@ export default function LearningRunner({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="space-y-5 text-center py-2"
+            className="space-y-4 py-1"
           >
-            <div className="flex justify-center mb-1">
-              <VisualAnchor iconName={activeStep.word.iconName} vocabId={activeStep.word.id} size="lg" />
-            </div>
+            {/* Passive Recall UI container */}
+            <div className="min-h-72.5 flex flex-col justify-between py-1">
+              {/* Vietnamese Meaning (Crucial: Shown FIRST during recall!) */}
+              <div className="space-y-2 max-w-sm mx-auto w-full transition-all duration-300">
+                <div className="text-[10px] uppercase tracking-widest text-stone-500 font-mono font-bold text-center block">
+                  Ý nghĩa tiếng Việt
+                </div>
+                <div 
+                  className={`p-5 rounded-2.5xl transition-all duration-300 shadow-sm border text-center ${
+                    !flowRevealed 
+                      ? 'bg-indigo-50/50 dark:bg-indigo-950/15 border-[#4F46E5]/40 scale-102 ring-4 ring-[#4F46E5]/5' 
+                      : 'bg-white dark:bg-stone-950/55 border-[#E5E1DA] dark:border-stone-880'
+                  }`}
+                >
+                  <p className="text-xl font-bold font-serif italic text-stone-900 dark:text-stone-100 leading-normal">
+                    "{activeStep.word.meaning}"
+                  </p>
+                  
+                  {!flowRevealed && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: [0.6, 1, 0.6] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="mt-3 flex items-center justify-center gap-1.5 text-[10px] text-stone-600 dark:text-stone-400 font-medium font-mono"
+                    >
+                      <Brain size={12} className="text-[#4F46E5] animate-pulse" />
+                      <span>Nhẩm nghĩ từ tiếng Nhật trong đầu...</span>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
 
-            {/* Step Progressive Revelations */}
-            <div className="space-y-2">
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1A1A1A] dark:text-stone-50 font-serif">
-                {activeStep.word.kana}
-              </h1>
-              {activeStep.word.kanji && (
-                <p className="text-sm text-stone-600 dark:text-stone-400 font-mono italic">
-                  {activeStep.word.kanji}
-                </p>
-              )}
-              <span className="inline-block text-[10px] bg-[#F5F2EF] px-2 py-0.5 rounded font-mono font-bold text-stone-705">
-                Romaji: {activeStep.word.romaji}
-              </span>
-            </div>
+              {/* Central Relation Link Arrow when recall is occurring */}
+              <div className="h-6 flex items-center justify-center my-0.5">
+                {!flowRevealed ? (
+                  <motion.div 
+                    animate={{ y: [0, 4, 0] }}
+                    transition={{ repeat: Infinity, duration: 1.2 }}
+                    className="text-[#4F46E5] dark:text-indigo-400 text-sm font-bold"
+                  >
+                    ↓
+                  </motion.div>
+                ) : (
+                  <div className="text-stone-300 dark:text-stone-700 text-xs">✓</div>
+                )}
+              </div>
 
-            {/* Visual reveal on meaning with timer based spacing */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 }}
-              className="p-4 bg-[#F9F7F5] dark:bg-[#1C1917]/55 border border-[#E5E1DA] rounded-2xl max-w-sm mx-auto shadow-xs"
-            >
-              <div className="text-[9px] uppercase tracking-widest text-stone-605 block mb-1">Ý nghĩa tiếng Việt</div>
-              <p className="text-base font-bold font-serif italic text-stone-900 dark:text-stone-100">
-                "{activeStep.word.meaning}"
-              </p>
-            </motion.div>
+              {/* Japanese elements (Kana, Kanji, Romaji, VisualAnchor) */}
+              <div className="space-y-4">
+                <AnimatePresence mode="wait">
+                  {!flowRevealed ? (
+                    <motion.button
+                      key="recall-placeholder"
+                      onClick={skipRecallAndReveal}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="w-full py-5 px-4 bg-stone-100/40 dark:bg-stone-900/40 border border-[#E5E1DA] dark:border-stone-800 rounded-2.5xl flex flex-col items-center justify-center gap-2 cursor-pointer group active:scale-98 transition-all hover:border-[#4F46E5]/40 animate-fadeIn"
+                    >
+                      <div className="flex justify-center mb-1">
+                        {/* Shimmer visual anchor to maintain layout stability */}
+                        <div className="w-14 h-14 bg-stone-200/50 dark:bg-stone-800/50 rounded-2xl animate-pulse flex items-center justify-center text-stone-450 dark:text-stone-600">
+                          <Zap size={20} className="opacity-40" />
+                        </div>
+                      </div>
+                      <div className="h-8 flex items-center justify-center">
+                        <span className="text-stone-500 group-hover:text-[#4F46E5] text-xs font-mono font-bold tracking-wider animate-pulse">
+                          Chạm để hiện đáp án ngay 👁️
+                        </span>
+                      </div>
+                    </motion.button>
+                  ) : (
+                    <motion.div
+                      key="japanese-reveal"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ type: "spring", stiffness: 100, damping: 15 }}
+                      className="space-y-3 text-center"
+                    >
+                      <div className="flex justify-center">
+                        <VisualAnchor iconName={activeStep.word.iconName} vocabId={activeStep.word.id} size="lg" />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1A1A1A] dark:text-stone-50 font-serif">
+                          {activeStep.word.kana}
+                        </h1>
+                        {activeStep.word.kanji && (
+                          <p className="text-sm text-stone-600 dark:text-stone-400 font-mono italic">
+                            {activeStep.word.kanji}
+                          </p>
+                        )}
+                        <span className="inline-block text-[10px] bg-[#F5F2EF] dark:bg-stone-800 px-2.5 py-0.5 rounded font-mono font-bold text-stone-705 dark:text-stone-300">
+                          Romaji: {activeStep.word.romaji}
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </motion.div>
         ) : (
           <motion.div
@@ -826,6 +971,7 @@ export default function LearningRunner({
           </button>
         </div>
       </div>
+
       {/* Mobile Swipe Navigation Hint */}
       <div className="text-center mt-3 block sm:hidden">
         <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono tracking-wide">
