@@ -126,9 +126,15 @@ const Home = () => {
         <header className="border-b border-[#E5E1DA] dark:border-stone-900 bg-[#FDFCFB]/80 dark:bg-stone-950/70 backdrop-blur-md sticky top-0 z-40">
             <div className="max-w-5xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-[#4F46E5] rounded-xl text-white shadow-md shadow-indigo-500/10 flex items-center justify-center">
-                <Image src="./apple-touch-icon.png" alt="Zenith Logo" width={20} height={20} className="w-4 h-4" />
-                </div>
+                {/* <div className="p-2 bg-[#4F46E5] rounded-xl text-white shadow-md shadow-indigo-500/10 flex items-center justify-center"> */}
+                <Image
+                    src="/apple-touch-icon.png"
+                    alt="Zenith Japanese Logo"
+                    width={36}
+                    height={36}
+                    className="w-8 h-8 rounded-md"
+                />
+                {/* </div> */}
                 <div>
                 <h1 className="text-sm font-black uppercase tracking-[0.15em] text-[#1A1A1A] dark:text-white flex items-center gap-1.5 font-sans leading-none">
                     ZENITH JAPANESE
