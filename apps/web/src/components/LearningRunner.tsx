@@ -395,7 +395,38 @@ export default function LearningRunner({
 
   // Design Waveform Bars
   const waveformHeights = [14, 28, 42, 24, 32, 48, 36, 44, 20, 32, 40, 18];
+   // Mobile Swipe Gestures
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const firstTouch = e.touches[0];
+    touchStartX.current = firstTouch.clientX;
+    touchStartY.current = firstTouch.clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+
+    const firstTouch = e.changedTouches[0];
+    const diffX = firstTouch.clientX - touchStartX.current;
+    const diffY = firstTouch.clientY - touchStartY.current;
+
+    const minSwipeDistance = 50;
+
+    if (Math.abs(diffX) > minSwipeDistance && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX < 0) {
+        // Swipe Left -> Next word
+        handleNextStep();
+      } else {
+        // Swipe Right -> Previous word
+        handlePrevStep();
+      }
+    }
+
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
   // --- RENDER SCREEN VIEWS ---
   if (!isStarted) {
     return (
@@ -552,8 +583,11 @@ export default function LearningRunner({
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-stone-50 dark:bg-stone-900 border border-[#E5E1DA] rounded-3xl p-5 md:p-7 shadow-2xl transition-all select-none">
-      
+    <div 
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="w-full max-w-lg mx-auto bg-stone-50 dark:bg-stone-900 border border-[#E5E1DA] rounded-3xl p-5 md:p-7 shadow-2xl transition-all select-none"
+    > 
       {/* Dynamic Header Metrics row */}
       <div className="flex items-center justify-between border-b border-[#E5E1DA] dark:border-stone-800 pb-3 mb-4 text-xs font-mono">
         <div className="flex items-center gap-2">
@@ -791,6 +825,12 @@ export default function LearningRunner({
             🔊 Nghe 
           </button>
         </div>
+      </div>
+      {/* Mobile Swipe Navigation Hint */}
+      <div className="text-center mt-3 block sm:hidden">
+        <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono tracking-wide">
+          💡 Trượt sang trái / phải để chuyển từ nhanh
+        </span>
       </div>
     </div>
   );
