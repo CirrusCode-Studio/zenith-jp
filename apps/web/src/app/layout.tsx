@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
     description:
       "Audio-first Japanese learning system focused on speaking, listening, recall, and long-term retention through progressive neural acquisition.",
-
+    manifest: "/manifest.json",
     keywords: [
       "Zenith Japanese",
       "learn Japanese",
@@ -114,9 +114,6 @@ export const metadata: Metadata = {
 
       shortcut: ["/favicon.ico"],
     },
-
-    manifest: "/site.webmanifest",
-
     category: "education",
 };
 
