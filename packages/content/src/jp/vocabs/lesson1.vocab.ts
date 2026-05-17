@@ -14,7 +14,7 @@ export const lesson1Vocab: Vocab[] = [
   {
     "id": "2",
     "lessonId": "lesson_1",
-    "kana": "わたistachi",
+    "kana": "わたしたち",
     "kanji": "私たち",
     "meaning": "Chúng tôi",
     "romaji": "watashitachi",
