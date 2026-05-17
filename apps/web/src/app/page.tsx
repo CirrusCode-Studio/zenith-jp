@@ -5,8 +5,8 @@ import LearningRunner from '../components/LearningRunner';
 import { VOCABULARY_CLUSTERS, VOCABULARY_DATA, LESSON_DATA } from '@zenith-jp/content';
 import type { Vocab } from '@zenith-jp/core';
 import { getMemoryStates, updateGlobalStats } from '../services/progress.service';
+import Image from 'next/image';
 import { 
-  Compass, 
   Moon, 
   Sun, 
   Sparkles, 
@@ -127,7 +127,7 @@ const Home = () => {
             <div className="max-w-5xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-[#4F46E5] rounded-xl text-white shadow-md shadow-indigo-500/10 flex items-center justify-center">
-                <Compass size={20} className="stroke-[2.5]" />
+                <Image src="./apple-touch-icon.png" alt="Zenith Logo" width={20} height={20} className="w-4 h-4" />
                 </div>
                 <div>
                 <h1 className="text-sm font-black uppercase tracking-[0.15em] text-[#1A1A1A] dark:text-white flex items-center gap-1.5 font-sans leading-none">
