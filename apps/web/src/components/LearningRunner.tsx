@@ -501,14 +501,14 @@ export default function LearningRunner({
 
         <div className="pt-2 flex gap-3">
           <button onClick={onBackToDashboard} className="flex-1 py-3 px-6 rounded-2.5xl border border-stone-200 font-bold hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 text-xs font-mono tracking-wider cursor-pointer transition-colors text-center">
-            ◀ HUỶ QUAY LẠI
+            ◀ Back
           </button>
           <button
             id="btn-launch-neural-stream"
             onClick={() => triggerStartSession(studyMode)}
             className="flex-3 py-3 px-6 rounded-2.5xl bg-[#4F46E5] text-white font-bold text-xs tracking-wider cursor-pointer hover:bg-indigo-650 shadow-md flex items-center justify-center gap-2"
           >
-            KHỞI CHẠY THIỀN NHẬT NGỮ ➔
+            Run <Play size={14} />
           </button>
         </div>
       </div>
